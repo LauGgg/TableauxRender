@@ -9,26 +9,29 @@ class Text():
 
 class Sentence(Text):
     def __init__(self, text, pos, index):
-        self.text = text
-        self.index = index
         self.textParsed = self.parse(text)
-        print(self.textParsed)
         self.renderedText = self.FONT.render(self.textParsed, True, self.BLACK)
-        self.renderedIndex = self.FONT.render(str(self.index), True, self.RED)
+        self.index = index
+        if index:
+            self.renderedIndex = self.FONT.render(str(self.index), True, self.RED)
         self.pos = pos
-        self.realPos = [self.pos[0] - (self.renderedText.get_width() / 2), pos[1]]
+        self.realPos = [self.pos[0] - (self.renderedText.get_width() // 2), self.pos[1]]
+
+    def update(self, newText):
+        self.textParsed = self.parse(newText)
+        self.renderedText = self.FONT.render(self.textParsed, True, self.BLACK)
+        self.realPos = [self.pos[0] - (self.renderedText.get_width() // 2), self.pos[1]]
 
     def parse(self, text):
-        # ∧	∨ ⬌ ⭢ ⭤	 ⮕	→ ↔ ⇾ ¬
         phrases = [">", "<", ".", ",", "-"]
         symbols = ["→", "↔", " ∨ ", " ∧ ", "¬"]
         newText = text
-
         for i, phrase in enumerate(phrases):
             newText = newText.replace(phrase, symbols[i])
             newText.replace(phrase, symbols[i])
         return newText
     
-    def render(self, frame):
-        frame.blit(self.renderedIndex, (self.realPos[0] - 20, self.realPos[1]))
-        frame.blit(self.renderedText, self.realPos)
+    def render(self, scr):
+        if self.index:
+            scr.blit(self.renderedIndex, (self.realPos[0] - 20, self.realPos[1]))
+        scr.blit(self.renderedText, self.realPos)
