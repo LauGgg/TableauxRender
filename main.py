@@ -3,11 +3,10 @@ from cursor import Cursor
 from sentence import Sentence
 from line import Line
 from end import End
+from rule import Rule
+from text import Text
 
 pg.init()
-
-FONT = pg.font.Font("seguisym.ttf", 18)
-BLACK = (0, 0, 0)
 
 height = 900
 width = 800
@@ -15,23 +14,25 @@ scr = pg.display.set_mode((width, height))
 clock = pg.time.Clock()
 
 currPos = [width // 2, 60]
-cursor = Cursor(currPos, FONT.render("I", True, BLACK), scr)
+cursor = Cursor(currPos, Text("I", 'black', True, False), scr)
 inp = ""
-lastInp = ""
+lastInp = "" 
 boolean = True
 # typing: true if typing sequence, false if inputting if sequence is true of false
 typing = True
 inpRender = Sentence(inp, (width // 2, 8), False, False)
 
-splits = ""
 cents = []
 lines = []
 ends = []
-scale = []
+scale = 2
 openBranches = [[currPos, 0]]
 branch = 0
 index = 1
 waitingForWidth = False
+ruleInput = False
+ruleString = ""
+rules = []
 
 over = False
 n = 0
@@ -58,7 +59,7 @@ while run:
                     typing = True
                     inp = inp[:-1]
             elif event.key == pg.K_RIGHT:
-                ends.append(End(FONT.render("×", True, BLACK), currPos))
+                ends.append(End(Text("×", 'black', True, False), currPos))
                 openBranches.pop(branch)
                 if len(openBranches) == 0:
                     over = True
@@ -71,7 +72,7 @@ while run:
                 cursor.update(currPos)
 
             elif event.key == pg.K_LEFT:
-                ends.append(End(FONT.render("o", True, BLACK), currPos))
+                ends.append(End(Text("o", 'black', True, False), currPos))
                 openBranches.pop(branch)
                 if len(openBranches) == 0:
                     over = True
@@ -91,19 +92,20 @@ while run:
                 else:
                     scale += 1
                     newLine = Line(True, currPos, scale)
-                    lines[len(lines) - 1] = newLine
+                    lines[-1] = newLine
 
                 # split in two
             elif event.key == pg.K_DOWN:
                 if waitingForWidth == True:
                     scale -= 1
                     newLine = Line(True, currPos, scale)
-                    lines[len(lines) - 1] = newLine
+                    lines[-1] = newLine
                 else:
                     lines.append(Line(False, currPos, False))
                     currPos[1] += 42
                     cursor.update(currPos)
                     openBranches[branch][0] = currPos
+                    ruleInput = True
 
             elif event.key == pg.K_RETURN:
                 if waitingForWidth == True:
@@ -115,6 +117,7 @@ while run:
                     cursor.update(currPos)
                     lines.append(newLine)
                     waitingForWidth = False
+                    ruleInput = True
 
             elif event.key == pg.K_TAB:
                 # switch branch
@@ -127,7 +130,11 @@ while run:
                 cursor.update(currPos)
 
             elif event.key == pg.K_SPACE:
-                if typing:
+                if ruleInput:
+                    rules.append(Rule(ruleString, lines[-1]))
+                    ruleString = ""
+                    ruleInput = False
+                elif typing:
                     typing = False
                 else:
                     if inp != "":
@@ -141,22 +148,22 @@ while run:
                         inpRender.update("")
                         typing = True
             else:
-                if typing and not over:
+                if ruleInput:
+                    ruleString += event.unicode
+                elif typing and not over:
                     inp += event.unicode
                 else:
                     if event.key == pg.K_f:
                         boolean = False
                         inpRender.update(inpRender.textParsed + " : F")
-
                     else:
                         boolean = True
                         inpRender.update(inpRender.textParsed + " : T")
 
-
     scr.fill((255,255,255))
     if not over:
-        pg.draw.line(scr, BLACK, [(width // 2) - 100, 38], [(width // 2) + 100, 38], 2)
-        pg.draw.line(scr, BLACK, [(width // 2) - 80, 43], [(width // 2) + 80, 43], 1)
+        pg.draw.line(scr, Text.COLOR['black'], [(width // 2) - 100, 38], [(width // 2) + 100, 38], 2)
+        pg.draw.line(scr, Text.COLOR['black'], [(width // 2) - 85, 44], [(width // 2) + 85, 44], 2)
         n += 1
         if n < 20:
             cursor.render()
@@ -175,8 +182,7 @@ while run:
         line.render(scr)
     for end in ends:
         end.render(scr)
-
-
-
+    for rule in rules:
+        rule.render(scr)
     clock.tick(30)
     pg.display.update()
